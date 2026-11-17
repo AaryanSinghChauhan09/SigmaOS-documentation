@@ -3,7 +3,7 @@ name = "SigmaOS-documentation"
 tier = 2
 stability = "scaffold"
 language = "rust"
-description = "documentation component"
+description = "Documentation hub: user guide, developer docs, API reference, troubleshooting"
 upstream = []
 
 [contract]

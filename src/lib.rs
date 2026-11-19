@@ -1,50 +1,67 @@
-// SPDX-License-Identifier: Apache-2.0
-#![no_std]
-//! SigmaOS-documentation - Documentation generator model.
-//!
-//! Models documentation features: doc generation,
-//! API docs. no_std compatible.
+//! SigmaOS-documentation — documentation component for SigmaOS
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
-/// Document
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Document {
-    pub id: u32,
+use thiserror::Error;
+
+/// Error types for this component.
+#[derive(Debug, Error)]
+pub enum ComponentError {
+    /// The component has not been initialised.
+    #[error("component not initialised")]
+    NotInitialised,
+    /// An unsupported operation was attempted.
+    #[error("unsupported operation: {0}")]
+    Unsupported(&'static str),
 }
 
-/// Documentation state with fixed-capacity storage
-pub struct Documentation {
-    pub docs: [Option<Document>; 4],
+/// Convenience result type.
+pub type ComponentResult<T> = Result<T, ComponentError>;
+
+/// Core component struct for documentation.
+#[derive(Debug, Default, Clone)]
+pub struct Component {
+    initialised: bool,
+    name: String,
 }
 
-impl Documentation {
+impl Component {
+    /// Create a new, uninitialised component.
     pub fn new() -> Self {
-        Self { docs: [None; 4] }
-    }
-
-    pub fn add_doc(&mut self, doc: Document) -> Result<(), DocumentationError> {
-        for i in 0..self.docs.len() {
-            if self.docs[i].is_none() {
-                self.docs[i] = Some(doc);
-                return Ok(());
-            }
+        Self {
+            initialised: false,
+            name: String::from("documentation"),
         }
-        Err(DocumentationError::Full)
     }
 
-    pub fn count(&self) -> usize {
-        self.docs.iter().filter(|d| d.is_some()).count()
+    /// Initialise the component.
+    pub fn init(&mut self) -> ComponentResult<()> {
+        self.initialised = true;
+        Ok(())
     }
-}
 
-impl Default for Documentation {
-    fn default() -> Self {
-        Self::new()
+    /// Returns true if the component has been initialised.
+    pub fn is_ready(&self) -> bool {
+        self.initialised
     }
-}
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum DocumentationError {
-    Full,
+    /// Execute the component's primary operation.
+    pub fn run(&self) -> ComponentResult<()> {
+        if !self.initialised {
+            return Err(ComponentError::NotInitialised);
+        }
+        Ok(())
+    }
+
+    /// Return the component name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Reset the component to uninitialised state.
+    pub fn reset(&mut self) {
+        self.initialised = false;
+    }
 }
 
 #[cfg(test)]
@@ -52,16 +69,63 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_creation() {
-        let d = Documentation::new();
-        assert_eq!(d.count(), 0);
+    fn test_new_not_ready_aaa() {
+        // Arrange + Act
+        let c = Component::new();
+        // Assert
+        assert!(!c.is_ready());
     }
 
     #[test]
-    fn test_add_doc() {
-        let mut d = Documentation::new();
-        let doc = Document { id: 1 };
-        assert!(d.add_doc(doc).is_ok());
-        assert_eq!(d.count(), 1);
+    fn test_init_makes_ready_aaa() {
+        // Arrange
+        let mut c = Component::new();
+        // Act
+        c.init().unwrap();
+        // Assert
+        assert!(c.is_ready());
+    }
+
+    #[test]
+    fn test_run_before_init_fails_aaa() {
+        // Arrange
+        let c = Component::new();
+        // Act
+        let result = c.run();
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_run_after_init_succeeds_aaa() {
+        // Arrange
+        let mut c = Component::new();
+        c.init().unwrap();
+        // Act
+        let result = c.run();
+        // Assert
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_reset_clears_init_aaa() {
+        // Arrange
+        let mut c = Component::new();
+        c.init().unwrap();
+        assert!(c.is_ready());
+        // Act
+        c.reset();
+        // Assert
+        assert!(!c.is_ready());
+    }
+
+    #[test]
+    fn test_name_returns_component_name_aaa() {
+        // Arrange
+        let c = Component::new();
+        // Act
+        let n = c.name();
+        // Assert
+        assert!(!n.is_empty());
     }
 }
